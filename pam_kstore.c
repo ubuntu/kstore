@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "util.h"
 
 #define PAM_SM_AUTH
 #define PAM_SM_SESSION
