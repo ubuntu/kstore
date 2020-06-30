@@ -37,7 +37,7 @@
 #include <security/_pam_macros.h>
 
 #define HOME_LOCK ".home.locked"
-#define KEYSTORE_BIN LIBEXECDIR"/user_keystore"
+/* #define KEYSTORE_BIN LIBEXECDIR"/user_keystore" */
 
 #define ENV_ITEM(n) { (n), #n }
 static struct

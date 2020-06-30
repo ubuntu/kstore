@@ -16,7 +16,6 @@
 
 void *xrealloc(void *ptr, size_t size);
 void *xmalloc(size_t size);
-char *freadline(FILE *stream);
 int check_dir_ok(char *path);
 int check_path(const char *path);
 char *get_tmp_dir();

@@ -27,24 +27,6 @@ void *xmalloc(size_t size) {
   return r;
 }
 
-/* Why doesn't libc have a method to read a line from a file, similar
-   to python's f.readline()?  This is an implementation. */
-
-char *freadline(FILE *stream) {
-  char buf[512];
-  size_t alloc = 0;
-  char *ret = NULL;
-  char *t;
-  t = fgets(buf, sizeof(buf), stream);
-  if (t == NULL) {
-    return NULL;
-  }
-  ret = xmalloc(sizeof(buf));
-  strcpy(ret, buf);
-  t = fgets(buf, sizeof(buf), stream);
-  return ret;
-}
-
 int check_dir_ok(char *path) {
   struct stat statbuf;
   int ret;
@@ -97,56 +79,6 @@ int check_path(const char *path) {
   }
   free(p);
   return 0;
-}
-
-char *get_tmp_dir() {
-  char *line;
-  FILE *conf;
-  char *confdir = dirname(strdup(CONFIG_FILE));
-  char *tmp;
-
-  /* Start paranoia checks */
-  if (check_path(confdir) != 0) {
-    /* Can't trust confdir, just return DEFAULT_SYSUSRTMP */
-    return DEFAULT_SYSUSRTMP;
-  }
-
-  /* Ok, paranoia checks over, let's open the file and parse it, then */
-  conf = fopen(CONFIG_FILE,"r");
-  if (conf == NULL) {
-    /* Fallback */
-    return DEFAULT_SYSUSRTMP;
-  }
-  line = freadline(conf);
-  while (line) {
-    char *key, *value;
-    if ((line[0] == '#') || (strchr(line, '=') == NULL)) {
-      free(line);
-      line = freadline(conf);
-      continue;
-    }
-    tmp = strchr(line, '=');
-    *tmp = '\0';
-    key = line;
-    value = tmp+1;
-
-    /* chomp */
-    if (value[strlen(value)-1] == '\n') {
-      value[strlen(value)-1] = '\0';
-    }
-
-    if (strcmp(key, "tmpdir") == 0) {
-      value = strdup(value);
-      free(line);
-      return value;
-    }
-
-    /* Cleanup */
-    free(line);
-    line = freadline(conf);
-  }
-  /* Fallback */
-  return DEFAULT_SYSUSRTMP;
 }
 
 /* some syslogging */

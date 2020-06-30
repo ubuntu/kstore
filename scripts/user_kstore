@@ -1,0 +1,103 @@
+#!/bin/sh
+set -eu
+
+KEYSTORE=/run/keystore
+
+usage() {
+    # Display script usage
+    cat<<EOF
+Usage: $(basename "$0") [COMMAND] [OPTIONS...]
+    Open and close the keystore.
+
+Commands:
+    unlock  Open the keystore, need passphrase on stdin.
+    lock    Close the keystore
+Options:
+    -h, --help      This help
+    -d, --debug     Enable debug mode
+EOF
+    exit
+}
+
+SHORTOPTS="hd"
+LONGOPTS="help,debug"
+
+TEMP=$(getopt -o $SHORTOPTS --long $LONGOPTS -- "$@")
+eval set -- "$TEMP"
+
+while true ; do
+    case "$1" in
+        -h|--help)
+            usage;;
+        -d|--debug)
+            set -x
+            shift;;
+        --)
+            shift;
+            break;;
+        *)
+            usage;;
+    esac
+done
+
+COMMAND=$( echo $1 | tr '[:upper:]' '[:lower:]' )
+
+
+if [ "${COMMAND}" = "lock" ]; then
+	pool="$2"
+	user="$3"
+	if [ -n "$(ls -A ${KEYSTORE}/${pool}/${user})" ]; then
+		umount ${KEYSTORE}/${pool}/${user}
+	fi
+	devmapper="/dev/mapper/keystore-${pool}-${user}"
+	if [ -e "${devmapper}" ]; then
+		cryptsetup luksClose "${devmapper}"
+	fi
+	for loopdev in $(losetup -O NAME -n -j "${KEYSTORE}/${pool}/${user}.enc"); do
+		losetup -d "${loopdev}"
+	done
+
+elif [ "${COMMAND}" = "unlock" ]; then
+	### USED BY PAM ###
+	user=${PAM_USER:-$2}
+	home=$(getent passwd "${user}" | cut -d: -f6 | cut -c2-)
+	homeunit="/run/systemd/generator/$(systemd-escape "${home}").mount"
+
+	if [ ! -f "${homeunit}" ]; then
+		echo "Didn’t find any generated mount units for user. Skipping"
+		exit 0
+	fi
+
+	devpath="$(grep What ${homeunit} | cut -d= -f2-)"
+
+	dev=""
+	if echo "${devpath}" | grep -q "^/dev/"; then
+		dev="${devpath##*/}"
+	else
+		dev="${devpath%%/*}"
+	fi
+
+	mapper="keystore-${dev}-${user}"
+	if [ -e "/dev/mapper/${mapper}" ]; then
+		exit 0
+	fi
+
+	keypath="$(readlink -f ${KEYSTORE}/${dev}/${user}.enc)"
+	if [ ! -e "$keypath" ]; then
+		exit 0
+	fi
+
+	loopdevice=$(losetup --show -f "$keypath")
+	if [ ! -e "$loopdevice" ]; then
+		echo "E: Couldn't allocate loop device for user $user and key $keypath"
+		exit 1
+	fi
+
+	tr '\0' '\n' | /sbin/cryptsetup luksOpen ${loopdevice} "${mapper}"
+
+	mount /dev/mapper/${mapper} ${KEYSTORE}/${dev}/${user}
+
+else
+	echo "E: Unknown command: ${COMMAND}"
+	usage
+fi
