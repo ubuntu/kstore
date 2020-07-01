@@ -27,25 +27,19 @@
 #define _GNU_SOURCE
 
 #include "config.h"
-// TODO: CLEANUP includes.
 
-#include <ctype.h>
 #include <errno.h>
 #include <pwd.h>
-#include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #define PAM_SM_AUTH
 #define PAM_SM_SESSION
-
 
 #include <security/pam_modules.h>
 #include <security/pam_modutil.h>
