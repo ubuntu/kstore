@@ -1,4 +1,9 @@
 /*
+ * This pam module unlocks the key store by calling the helper script
+ * user_kstore. It then locks the session to prevent systemd from
+ * auto-unmounting it until the last connection to the session is terminated.
+ *
+ *
  * Copyright (C) 2020 Canonical
  *
  * Authors:
@@ -96,6 +101,10 @@ get_user_home (pam_handle_t * pamh)
   return user_entry->pw_dir;
 }
 
+/*
+ * Main routine to unlock the key store by calling the helper script
+ * user_kstore. The password is read from PAM on stdin.
+ */
 static int
 unlock_keystore (pam_handle_t * pamh, int argc, const char **argv)
 {
@@ -315,14 +324,14 @@ unlock_keystore (pam_handle_t * pamh, int argc, const char **argv)
 }
 
 PAM_EXTERN int
-pam_sm_authenticate (pam_handle_t * pamh, int flags, int argc, const char **argv)
+pam_sm_authenticate (pam_handle_t * pamh, int flags, int argc,
+		     const char **argv)
 {
   return unlock_keystore (pamh, argc, argv);
 }
 
 PAM_EXTERN int
-pam_sm_setcred (pam_handle_t *pamh, int flags,
-		int argc, const char **argv)
+pam_sm_setcred (pam_handle_t * pamh, int flags, int argc, const char **argv)
 {
   return PAM_IGNORE;
 }
