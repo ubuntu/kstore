@@ -2,32 +2,28 @@ project('kstore',
         ['c'],
         version: '0.1.0',
         license: 'GPLv2',
-        meson_version: '>= 0.47.0',
+        meson_version: '>= 0.53.0',
 )
 
 cc = meson.get_compiler('c')
 
 prefix = get_option('prefix')
 libexec_dir = join_paths(prefix, get_option('libexecdir'))
-source_root = join_paths(meson.source_root(), 'kstore')
+pam_modules_dir = join_paths(get_option('libdir'), 'security')
 
 version_arr = meson.project_version().split('.')
 major_version = version_arr[0].to_int()
 minor_version = version_arr[1].to_int()
 micro_version = version_arr[2].to_int()
 
-inc = include_directories('.')
-
 libpam = [ cc.find_library('pam') ]
-defs = []
 if not(cc.has_function('pam_start',
-        args: defs,
         dependencies: libpam,
         prefix: '''
                 #include <security/pam_appl.h>
         '''
 ))
-        error('Couldn\'t find security/pam_appl.h or pam_start in lib lib pam')
+        error('Couldn\'t find security/pam_appl.h or pam_start in lib lib pam. Install libpam0g-dev')
 endif
 
 conf = configuration_data()
@@ -36,9 +32,12 @@ configure_file(output: 'config.h',
                configuration: conf)
 config_h_dir = include_directories('.')
 
-kstore_sources = ['pam_kstore.c']
-kstorelib = shared_library('pam_keystore',
-                        kstore_sources,
-                        include_directories : inc,
+pam_kstore = shared_module('pam_kstore',
+                        ['pam_kstore.c'],
+                        include_directories : '.',
                         dependencies: libpam,
-                        install : true)
+                        install : true,
+                        install_dir: pam_modules_dir,
+                        )
+
+install_data('user_kstore', install_dir: libexec_dir, install_mode: ['rwxr-xr-x', 0, 0])

@@ -1,0 +1,9 @@
+Name: unlock per-user key
+Default: yes
+Priority: 1
+Auth-Type: Additional
+Auth:
+	optional	pam_kstore.so
+Session-Type: Additional
+Session:
+	optional	pam_kstore.so

@@ -1,0 +1,5 @@
+#! /bin/sh -e
+
+pam-auth-update --package --remove kstore
+
+#DEBHELPER#

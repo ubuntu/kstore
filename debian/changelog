@@ -1,0 +1,5 @@
+kstore (0.1.0ppa2) groovy; urgency=medium
+
+  * Initial release.
+
+ -- Jean-Baptiste Lallement <jean-baptiste.lallement@ubuntu.com>  Thu, 18 Jun 2020 15:17:14 +0200
